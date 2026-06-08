@@ -1,0 +1,41 @@
+.wrapper {
+  display: grid;
+  grid-template-columns: 50% 50%;
+}
+.half{
+  border:1px solid black;
+  padding:10px
+}
+
+body{
+    background-color:#FFFFB0;
+}
+button{
+    background-color:#7f7f7f;
+    color:white;
+    border:1px solid #70707f;
+    width:min(50%,150px);
+    box-sizing: border-box;
+}
+button:active {
+  box-shadow: 0 0 10px rgba(0,0,0,0.5) inset;
+  transform: scale(0.97);
+}
+label {
+    display:block;
+}
+textarea{
+    background-color:#3f3f3f;
+    color: #70b0bf;
+    border:1px solid black;
+    width:min(100%,300px);
+    box-sizing: border-box;
+    height:200px;
+}
+canvas{
+    display:block;
+    border:1px solid black;
+    width:min(100%,300px);
+    box-sizing: border-box;
+    height:200px;
+}

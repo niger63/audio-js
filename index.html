@@ -2,9 +2,28 @@
 <html>
     <head>
         <script type="module" src="script.js"></script>
-        
+        <link rel = "stylesheet" href="style.css"></link>
     </head>
     <body>
-        
+        <div class="wrapper">
+    
+            <div class="half">
+                <h2>Modulator</h2>
+                <label for = "text_input">Enter text to be modulated:</label>
+                <textarea id="text_input" ></textarea>
+                
+                <div>
+                    <button id="play_button">play</button><button id="stop_button">stop</button>
+                </div>
+            </div><div class="half">
+                <h2>Demodulator</h2>
+                
+                <div>
+                    <canvas id = "canvas"></canvas>
+                    <button id="record_button">record</button><button id="stop_record_button">stop</button>
+                    
+                </div>
+            </div>
+        </div>
     </body>
 </html>
