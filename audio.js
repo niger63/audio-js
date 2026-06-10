@@ -11,7 +11,6 @@ class PlayerWorklet extends AudioWorkletProcessor {
         if (e.data.type === 'play') {
             // Toggle between playing and silence
             this.carrier = e.data.carrier;
-            this.samp_rate = e.data.samp_rate;
             this.sym_rate = e.data.sym_rate;
             this.syms = e.data.syms;
             this.ph=0.0;
@@ -33,20 +32,21 @@ class PlayerWorklet extends AudioWorkletProcessor {
         const channel = output[0];
         //let res = true;
         for (let i = 0; i < channel.length; ++i) {
-            let symn = Math.floor(this.samps*this.sym_rate / this.samp_rate);
+            let symn = Math.floor(this.samps*this.sym_rate / sampleRate);
             if ( symn < this.syms.length){
                 let sym = this.syms[symn];
                 let I = -1+(sym >> 2)/3*2;
                 let Q = -1+(sym & 3)/3*2;
                 
                 channel[i] = I*Math.cos(this.ph) + Q * Math.sin(this.ph);
-                this.ph+=this.carrier*2*Math.PI/this.samp_rate;
+                this.ph+=this.carrier*2*Math.PI/sampleRate;
                 if (this.ph>2*Math.PI){
                     this.ph-=2*Math.PI
                 }
                 this.samps+=1;
             }else{
                 channel[i] = 0.0;
+                break;
                 //res = false;
             }
             

@@ -39,3 +39,6 @@ canvas{
     box-sizing: border-box;
     height:200px;
 }
+input{
+    width:min(100%,300px);
+}

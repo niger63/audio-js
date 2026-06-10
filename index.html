@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
     <head>
-        <script type="module" src="script.js"></script>
+        <script defer type="module" src="script.js"></script>
         <link rel = "stylesheet" href="style.css"></link>
     </head>
     <body>
@@ -19,9 +19,17 @@
                 <h2>Demodulator</h2>
                 
                 <div>
-                    <canvas id = "canvas"></canvas>
+                    <canvas id = "oscilloscope"></canvas>
                     <button id="record_button">record</button><button id="stop_record_button">stop</button>
+                    <label for="vertical">vertical scale</label>
+                    <input type="range" id="vertical" min="1" max="1000" value="1" step="1" />
+                    <label for="horizontal">horizontal scale</label>
+                    <input type="range" id="horizontal" min="100" max="2000" value="2000" step="1" />
                     
+                    <canvas id = "stars"></canvas>
+                    <!--<input type="range" id="scale" min="1" max="1000" value="1" step="1" />-->
+    
+  
                 </div>
             </div>
         </div>
