@@ -31,6 +31,7 @@ textarea{
     width:min(100%,300px);
     box-sizing: border-box;
     height:200px;
+    display:block;
 }
 canvas{
     display:block;
