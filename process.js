@@ -12,13 +12,13 @@ class Processor extends AudioWorkletProcessor {
             defaultValue: 1000,
             minValue: 0,
             maxValue: 20000,
-            automationRate: "a-rate",
-          },
+            automationRate: "k-rate",
+          }
         ];
     }
     process(inputs, outputs,params) {
         //console.log(outputs);
-        console.log(inputs);
+        //console.log(inputs[0][0]);
         const input = inputs[0];
         if(!input.length){
             return true;
@@ -27,12 +27,12 @@ class Processor extends AudioWorkletProcessor {
         const channel = input[0];
         const I = outputs[0][0];
         const Q = outputs[1][0];
-        
+        const cattier = params["carrier"];
         for (let i = 0; i < channel.length; ++i) {
-            I[i] = 4*channel[i]*Math.cos(this.ph);
-            Q[i] = 4*channel[i]*Math.sin(this.ph);
+            I[i] = 2*channel[i]*Math.cos(this.ph);
+            Q[i] = 2*channel[i]*Math.sin(this.ph);
             
-            this.ph+=params["carrier"]*2*Math.PI/sampleRate;
+            this.ph+=cattier*2*Math.PI/sampleRate;
             if (this.ph>2*Math.PI){
                 this.ph-=2*Math.PI
             }

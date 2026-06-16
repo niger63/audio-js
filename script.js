@@ -1,34 +1,64 @@
 
 let sym_rate = 100;
 
-let carrier = 1000;
+let carrier = 5000;
 
 let is_recording = false;
 
+
 const audio = new AudioContext();
 audio.suspend();
-
-// Load an audio worklet
 await audio.audioWorklet.addModule('audio.js');
-
-// Create a player
 const player = new AudioWorkletNode(audio, 'player-worklet');
-
-// Connect the player to the audio context
 player.connect(audio.destination);
 
 
 const audio_source = new AudioContext();
 audio_source.suspend()
+
+
 await audio_source.audioWorklet.addModule("process.js");
 const processor = new AudioWorkletNode(audio_source, "processor",{numberOfOutputs:2});
+processor.channelCountMode = "explicit";
+processor.channelCount = 1;
+const carr_param = processor.parameters.get("carrier")
+carr_param.setValueAtTime(carrier,audio_source.currentTime)
+
+
+await audio_source.audioWorklet.addModule("decoder.js");
+const decoder = new AudioWorkletNode(audio_source, "decoder",{numberOfInputs:2});
+decoder.channelCountMode = "explicit";
+decoder.channelCount = 1;
+decoder.port.onmessage= (e) => {
+    document.getElementById("text_output").value = decode(e.data);
+    console.log(e);
+}
+const sym_param = decoder.parameters.get("sym_rate")
+sym_param.setValueAtTime(sym_rate,audio_source.currentTime)
+
+
+
 const analyser = audio_source.createAnalyser();
 const analyser1 = audio_source.createAnalyser();
 const analyser2 = audio_source.createAnalyser();
 
-const filter1 = new BiquadFilterNode(audio_source,{type:"lowpass",frequency:carrier/3});
-const filter2 = new BiquadFilterNode(audio_source,{type:"lowpass",frequency:carrier/3});
+const filter1 = new BiquadFilterNode(audio_source,{type:"lowpass",frequency:sym_rate*10});
+const filter2 = new BiquadFilterNode(audio_source,{type:"lowpass",frequency:sym_rate*10});
 
+
+filter1.connect(decoder,0,0);
+filter2.connect(decoder,0,1);
+filter1.connect(analyser1);
+filter2.connect(analyser2);
+processor.connect(filter1,0);
+processor.connect(filter2,1);
+
+
+let bufferLength = analyser.frequencyBinCount;
+const vertical = document.getElementById("vertical");
+
+const horizontal = document.getElementById("horizontal");
+horizontal.max = bufferLength
 
 
 
@@ -45,6 +75,8 @@ function draw1() {
   const WIDTH = canvas1.width;
   const HEIGHT = canvas1.height;
   const sz = Math.min(WIDTH, HEIGHT);
+  const gain = 10**(vertical.value/10);
+  
   const drawVisual = requestAnimationFrame(draw1);
   
   analyser1.getFloatTimeDomainData(dataArray1);
@@ -64,13 +96,14 @@ function draw1() {
   // Draw each point in the waveform
   let x = 0;
   for (let i = 0; i < dataArray1.length; i++) {
-    const v = Math.min(Math.max(dataArray1[i]* vertical.value,-1),1);
-    const u = Math.min(Math.max(dataArray2[i]* vertical.value,-1),1);
+    const v = Math.min(Math.max(dataArray1[i]* gain,-1),1);
+    const u = Math.min(Math.max(dataArray2[i]* gain,-1),1);
     
     const x = v * (sz / 2) + WIDTH / 2;
     const y = -u * (sz / 2) + HEIGHT / 2;
     canvasCtx1.fillRect(x, y, 1, 1);
   }
+  canvasCtx1.fillRect(10, 10, 10, 10);
 
 }
 draw1();
@@ -78,14 +111,12 @@ draw1();
 
 
 
-let bufferLength = analyser.frequencyBinCount;
-let dataArray = new Float32Array();
+
+let dataArray = new Float32Array(bufferLength);
 //oscilloscope
 const canvas = document.getElementById("oscilloscope");
 const canvasCtx = canvas.getContext("2d");
-const vertical = document.getElementById("vertical");
-const horizontal = document.getElementById("horizontal");
-horizontal.max = bufferLength
+
 //canvasCtx.fillRect(10, 10, 100, 100);
 
 function draw() {
@@ -94,6 +125,7 @@ function draw() {
   canvas.height = canvas.clientHeight;
   const WIDTH = canvas.width;
   const HEIGHT = canvas.height;
+  const gain = 10**(vertical.value/10);
   
   const drawVisual = requestAnimationFrame(draw);
   if(horizontal.value!==dataArray.length){
@@ -116,7 +148,7 @@ function draw() {
   const sliceWidth = WIDTH / (dataArray.length-1);
   let x = 0;
   for (let i = 0; i < dataArray.length; i++) {
-    const v = Math.min(Math.max(dataArray[i]* vertical.value,-1),1);
+    const v = Math.min(Math.max(dataArray[i]* gain,-1),1);
     const y = -v * (HEIGHT / 2) + HEIGHT / 2;
 
     if (i === 0) {
@@ -134,17 +166,25 @@ function draw() {
 draw();
 
 
-
-
+function decode(a){
+    const uint8Array = new Uint8Array(a.length/2);
+    for (let i = 0; i < a.length/2; i++){
+        uint8Array[i] = (a[i*2]<<4) | a[i*2+1];
+    }
+    
+    const utf8decoder = new TextDecoder();
+    return utf8decoder.decode(uint8Array);
+}
 function tosyms(txt){
     const enc = new TextEncoder();
     const uint8Array = new Uint8Array(txt.length*4);
     const res = enc.encodeInto(txt, uint8Array);
     console.log(uint8Array);
-    const a = [];
+    const a = [3,3,0,3];
     for (let i = 0; i < res.written; i++){
         a.push(uint8Array[i] >> 4,uint8Array[i] & 15);
     }
+    a.push(0,0);
     console.log(a);
     return a;
 }
@@ -182,11 +222,11 @@ btn1.addEventListener('click', () => {
 
 
 let stream;
-let first_time = true;
+let source;
 
 const startMicrophoneButton = document.getElementById("record_button")
 startMicrophoneButton.addEventListener("click", async () => {
-    if(first_time){
+    if(!is_recording){
         // Prompt the user to use their microphone.
         stream = await navigator.mediaDevices.getUserMedia({
             audio: {
@@ -196,29 +236,17 @@ startMicrophoneButton.addEventListener("click", async () => {
                 autoGainControl: false},
         });
         console.log(stream)
-        const source = audio_source.createMediaStreamSource(stream);
-
-        filter1.connect(analyser1);
-        filter2.connect(analyser2);
-        processor.connect(filter1,0);
-        processor.connect(filter2,1);
+        source = audio_source.createMediaStreamSource(stream);
+        
         
         source.connect(processor);
         source.connect(analyser);
-        //processor.connect(filter2);
+        
         audio_source.resume()
-        
-        
-        first_time = false;
         is_recording = true;
-    }else{
-        //mediaRecorder.resume();
         
-        stream.getTracks().forEach(track => track.enabled=true);
-        //audio_source.resume()
-        is_recording = true;
+        console.log("Your microphone audio is being used.");
     }
-    console.log("Your microphone audio is being used.");
 });
 
 const stopMicrophoneButton = document.getElementById("stop_record_button")
@@ -226,12 +254,15 @@ stopMicrophoneButton.addEventListener("click", () => {
     //mediaRecorder.pause();
     //audio_source.suspend()
     // Stop the stream.
-    
-    stream.getTracks().forEach(track => track.enabled=false);
-    //audio_source.suspend();
-    
-    is_recording = false;
-    console.log("Your microphone audio is not used anymore.");
+    if(is_recording){
+        source.disconnect();
+        stream.getTracks().forEach(track => track.stop());
+        
+        audio_source.suspend();
+        
+        is_recording = false;
+        console.log("Your microphone audio is not used anymore.")
+    }
     
     
 });
