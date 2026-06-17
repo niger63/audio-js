@@ -81,7 +81,7 @@ class Decoder extends AudioWorkletProcessor {
                 this.detection_avg_Q+=Q[i];
                 this.detection_processed += 1;
                 
-                if(this.detection_processed === this.sym_len_hf){
+                if(this.detection_processed == this.sym_len_hf){
                     this.detection_avg_I/= this.sym_len_hf;
                     this.detection_avg_Q/= this.sym_len_hf;
                     let good = 0;
@@ -163,7 +163,7 @@ class Decoder extends AudioWorkletProcessor {
                 
                 this.sync_processed += 1
                 
-                if(this.sync_processed > 3 * this.sym_len){
+                if(this.sync_processed > 2 * this.sym_len){
                     //console.log(this.mndata,this.mn);
                     if(this.mn !== 999999){
                         this.state = 2;
@@ -180,7 +180,7 @@ class Decoder extends AudioWorkletProcessor {
                 
                 
             }else if(this.state === 2){
-                if(this.norm_processed == this.sym_len){
+                if(this.norm_processed >= this.sym_len){
                     let avg1 = 0;
                     let avg2 = 0;
                     for (let s = 0; s < this.sym_len_hs; ++s) {
@@ -241,7 +241,7 @@ class Decoder extends AudioWorkletProcessor {
                 this.norm_processed+=1;
             }else if(this.state === 3){
                 this.skipped += 1;
-                if(this.skipped === 5*this.sym_len){
+                if(this.skipped >= 5*this.sym_len){
                     this.skipped = 0;
                     this.state = 0;
                 }
