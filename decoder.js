@@ -25,6 +25,7 @@ class Decoder extends AudioWorkletProcessor {
         this.last_sym = -1;
         this.syms = [];
         this.skipped = 0;
+        this.close_to_zero = 0;
     }
     static get parameterDescriptors() {
         return [
@@ -214,17 +215,21 @@ class Decoder extends AudioWorkletProcessor {
                     }else{
                         hfQ = 0;
                     }
+                    if(Math.abs(rs[0]) < 0.05 && Math.abs(rs[1]) < 0.05){
+                        this.close_to_zero +=1;
+                    }
                     
                     let sym = (hfI<<2)|hfQ;
                     console.log(sym);
                     this.syms.push(sym);
-                    if(sym === 0 && this.last_sym == 0 && this.syms.length%2==0){
+                    if(sym === 0 && this.last_sym === 0 && this.syms.length%2===0 || this.close_to_zero === 10){
                         this.state = 3;
                         this.last_sym = -1;
                         this.syms.length = this.syms.length - 2;
                         console.log(this.syms);
                         this.port.postMessage(this.syms);
                         this.syms.length = 0;
+                        this.close_to_zero = 0;
                     }else{
                         this.last_sym = sym;
                     }
